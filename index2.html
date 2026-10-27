@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monthsary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600&family=Gloock&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Monthsary</div>
+      <h1 id="names"></h1>
+    </header>
+
+    <section aria-live="polite">
+      <div class="count"><span class="num" id="months">0</span><span class="unit" id="unit">months</span></div>
+      <p class="status" id="status"></p>
+    </section>
+
+    <div id="banner" class="today-banner" hidden>Happy monthsary! Today is your day.</div>
+
+    <section class="facts" aria-label="Your numbers">
+      <div class="fact"><div class="k">Days together</div><div class="v" id="days">0</div></div>
+      <div class="fact"><div class="k">Next monthsary</div><div class="v" id="nextDate">-</div></div>
+      <div class="fact"><div class="k">Days to go</div><div class="v" id="toGo">0</div></div>
+    </section>
+
+    <section class="dots-wrap" aria-label="Months toward your next anniversary">
+      <div class="dots" id="dots"></div>
+      <div class="dots-cap" id="dotsCap"></div>
+    </section>
+
+    <section class="note">
+      <div class="from" id="noteFrom">A note for you</div>
+      <p id="noteText"></p>
+      <div class="actions">
+        <button class="btn-main" id="burst" type="button">Send some love</button>
+        <button class="btn-alt" id="another" type="button">Another note</button>
+      </div>
+    </section>
+
+    <details id="editor">
+      <summary>Make it yours</summary>
+      <form id="form">
+        <label for="n1">Your name<input id="n1" autocomplete="off"></label>
+        <label for="n2">Their name<input id="n2" autocomplete="off"></label>
+        <label class="wide" for="start">The day you became a couple<input id="start" type="date"></label>
+        <label class="wide" for="msg">Your own love note (optional)<textarea id="msg" placeholder="Write something only you would say."></textarea></label>
+        <p class="hint" id="hint">These are sample details. Change them and the page updates right away. They stay saved in this browser.</p>
+      </form>
+    </details>
+  </main>
+
+  <canvas id="fx" aria-hidden="true"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
