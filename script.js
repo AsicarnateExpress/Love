@@ -1,6 +1,6 @@
 (function () {
   // Change these defaults to your own details (or use "Make it yours" on the page).
-  var DEFAULTS = { n1: "Ana", n2: "Miguel", start: "2026-03-27", msg: "" };
+  var DEFAULTS = { n1: "Gabriel", n2: "Rhyza", start: "2025-01-01", msg: "" };
 
   var NOTES = [
     "Thank you for choosing me again this month. I would choose you in every one after it.",
@@ -185,5 +185,3 @@
     setTimeout(burst, 600);
   }
 })();
-
-
