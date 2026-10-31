@@ -190,11 +190,20 @@
   function setStatus(t) { el("addStatus").textContent = t; }
 
   // Built-in photos look in the photos folder first, then next to index2.html.
-  function setPhoto(img, name) {
-    img.onerror = function () { img.onerror = null; img.src = name; };
-    img.src = "photos/" + name;
+  // A photo that can't be found anywhere is dropped from the gallery.
+  var rebuildTimer = 0;
+  function dropBuiltin(it) {
+    var i = builtin.indexOf(it);
+    if (i < 0) return;
+    builtin.splice(i, 1);
+    clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(function () { buildGallery(); if (!el("lightbox").hidden) closePhoto(); }, 60);
   }
-  function paint(img, it) { if (it.url) img.src = it.url; else setPhoto(img, it.name); }
+  function paint(img, it) {
+    if (it.url) { img.src = it.url; return; }
+    img.onerror = function () { img.onerror = function () { img.onerror = null; dropBuiltin(it); }; img.src = it.name; };
+    img.src = "photos/" + it.name;
+  }
 
   function api(method, path, body) {
     var headers = { Accept: "application/vnd.github+json" };
@@ -302,6 +311,7 @@
   function buildGallery() {
     var g = el("gallery");
     g.innerHTML = "";
+    if (!all().length) { var e = document.createElement("p"); e.className = "empty"; e.textContent = "No photos yet. Tap Add photos to put your first memory here."; g.appendChild(e); return; }
     all().forEach(function (it, i) {
       var b = document.createElement("button");
       b.type = "button";
