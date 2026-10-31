@@ -173,9 +173,57 @@
     addEventListener("resize", function () { if (parts.length) fit(); });
   }
 
+  /* Photo gallery: files are photos/memory-01.jpg ... photos/memory-NN.jpg */
+  var PHOTO_COUNT = 17;
+  var photos = [], cur = 0;
+  for (var n = 1; n <= PHOTO_COUNT; n++) photos.push("photos/memory-" + (n < 10 ? "0" : "") + n + ".jpg");
+
+  function buildGallery() {
+    var g = el("gallery");
+    photos.forEach(function (src, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("aria-label", "Open photo " + (i + 1));
+      var im = document.createElement("img");
+      im.src = src; im.alt = "Memory " + (i + 1); im.loading = "lazy";
+      b.appendChild(im);
+      b.addEventListener("click", function () { openPhoto(i); });
+      g.appendChild(b);
+    });
+  }
+  function showPhoto() {
+    el("lbImg").src = photos[cur];
+    el("lbImg").alt = "Memory " + (cur + 1);
+    el("lbCount").textContent = (cur + 1) + " / " + photos.length;
+  }
+  function openPhoto(i) { cur = i; showPhoto(); el("lightbox").hidden = false; el("lbClose").focus(); }
+  function closePhoto() { el("lightbox").hidden = true; }
+  function step(d) { cur = (cur + d + photos.length) % photos.length; showPhoto(); }
+  function bindLightbox() {
+    el("lbClose").addEventListener("click", closePhoto);
+    el("lbPrev").addEventListener("click", function () { step(-1); });
+    el("lbNext").addEventListener("click", function () { step(1); });
+    el("lightbox").addEventListener("click", function (e) { if (e.target === el("lightbox")) closePhoto(); });
+    document.addEventListener("keydown", function (e) {
+      if (el("lightbox").hidden) return;
+      if (e.key === "Escape") closePhoto();
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+    });
+    var x0 = null;
+    el("lightbox").addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    el("lightbox").addEventListener("touchend", function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+    });
+  }
+
   load();
   bind();
   render();
+  buildGallery();
+  bindLightbox();
 
   // Hearts go off on their own when today is a monthsary.
   var t = new Date();
