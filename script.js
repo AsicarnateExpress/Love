@@ -173,36 +173,166 @@
     addEventListener("resize", function () { if (parts.length) fit(); });
   }
 
-  /* Photo gallery: files are photos/memory-01.jpg ... photos/memory-NN.jpg */
+  /* Photo gallery: built-in photos (memory-01.jpg ...) plus photos added from the page.
+     Added photos are saved into your GitHub repo (photos/added), so every device sees them. */
   var PHOTO_COUNT = 17;
-  var photos = [], cur = 0;
-  for (var n = 1; n <= PHOTO_COUNT; n++) photos.push("photos/memory-" + (n < 10 ? "0" : "") + n + ".jpg");
+  var builtin = [], remote = [], cur = 0;
+  var TOKEN_KEY = "monthsary-gh-token";
+  var GH = (function () {
+    var h = location.hostname, p = location.pathname.split("/")[1] || "";
+    if (/\.github\.io$/.test(h) && p) return { owner: h.split(".")[0], repo: p, dir: "photos/added" };
+    return { owner: "AsicarnateExpress", repo: "Love", dir: "photos/added" };
+  })();
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function all() { return builtin.concat(remote); }
+  function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
+  function setStatus(t) { el("addStatus").textContent = t; }
+
+  // Built-in photos look in the photos folder first, then next to index2.html.
+  function setPhoto(img, name) {
+    img.onerror = function () { img.onerror = null; img.src = name; };
+    img.src = "photos/" + name;
+  }
+  function paint(img, it) { if (it.url) img.src = it.url; else setPhoto(img, it.name); }
+
+  function api(method, path, body) {
+    var headers = { Accept: "application/vnd.github+json" };
+    var t = getToken();
+    if (t) headers.Authorization = "Bearer " + t;
+    if (body) headers["Content-Type"] = "application/json";
+    return fetch("https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/contents/" + path,
+      { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined });
+  }
+  function explain(res) {
+    if (res.status === 401 || res.status === 403) { showTokenBox(); return "GitHub did not accept the token. Create a new one and save it again."; }
+    if (res.status === 404) { showTokenBox(); return "GitHub can't find the repo " + GH.repo + " with this token. Make sure the token has access to it."; }
+    return "GitHub said no (error " + res.status + "). Try again.";
+  }
+
+  function loadRemote(cb) {
+    fetch("https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/contents/" + GH.dir, { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (list) {
+        remote = (Array.isArray(list) ? list : [])
+          .filter(function (f) { return f.type === "file" && /\.(jpe?g|png|webp)$/i.test(f.name); })
+          .sort(function (a, b) { return a.name < b.name ? -1 : 1; })
+          .map(function (f) { return { url: f.download_url, path: f.path, sha: f.sha }; });
+        cb();
+      })
+      .catch(function () { cb(); });
+  }
+
+  function shrink(file, cb) {
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      var s = Math.min(1, 1100 / Math.max(im.naturalWidth, im.naturalHeight));
+      var c = document.createElement("canvas");
+      c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (b) { cb(b); }, "image/jpeg", 0.8);
+    };
+    im.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    im.src = url;
+  }
+  function toBase64(blob, cb) {
+    var fr = new FileReader();
+    fr.onload = function () { cb(String(fr.result).split(",")[1]); };
+    fr.readAsDataURL(blob);
+  }
+
+  function addFiles(files) {
+    var list = Array.prototype.slice.call(files).filter(function (f) { return /^image\//.test(f.type); });
+    if (!list.length) return;
+    var total = list.length, done = 0, failed = false;
+    el("addPhotos").disabled = true;
+    function finish(msg) {
+      el("addPhotos").disabled = false;
+      setStatus(msg);
+      buildGallery();
+    }
+    (function next(i) {
+      if (i >= total) return finish(done + (done === 1 ? " photo saved." : " photos saved.") + " Everyone sees it after a minute or two.");
+      setStatus("Saving photo " + (i + 1) + " of " + total + "...");
+      shrink(list[i], function (blob) {
+        if (!blob) return next(i + 1);
+        toBase64(blob, function (b64) {
+          var path = GH.dir + "/" + Date.now() + "-" + (i + 1) + ".jpg";
+          api("PUT", path, { message: "Add photo", content: b64 })
+            .then(function (res) {
+              if (!res.ok) return finish(explain(res));
+              return res.json().then(function (d) {
+                remote.push({ url: d.content.download_url, path: d.content.path, sha: d.content.sha });
+                done++; next(i + 1);
+              });
+            })
+            .catch(function () { finish("No internet connection. Try again."); });
+        });
+      });
+    })(0);
+  }
+
+  function removeCurrent() {
+    var it = all()[cur];
+    if (!it || !it.path) return;
+    if (!getToken()) { closePhoto(); showTokenBox(); setStatus("Add your token first to remove photos."); return; }
+    setStatus("Removing photo...");
+    api("DELETE", it.path, { message: "Remove photo", sha: it.sha })
+      .then(function (res) {
+        if (!res.ok) { closePhoto(); return setStatus(explain(res)); }
+        remote = remote.filter(function (r) { return r !== it; });
+        buildGallery();
+        setStatus("Photo removed.");
+        if (!all().length) return closePhoto();
+        cur = Math.min(cur, all().length - 1);
+        showPhoto();
+      })
+      .catch(function () { closePhoto(); setStatus("No internet connection. Try again."); });
+  }
+
+  /* Token box (set up once per phone) */
+  function showTokenBox() { el("tokenBox").hidden = false; }
+  function refreshTokenUI() {
+    var has = !!getToken();
+    el("forgetToken").hidden = !has;
+    if (has) el("tokenBox").hidden = true;
+  }
 
   function buildGallery() {
     var g = el("gallery");
-    photos.forEach(function (src, i) {
+    g.innerHTML = "";
+    all().forEach(function (it, i) {
       var b = document.createElement("button");
       b.type = "button";
       b.setAttribute("aria-label", "Open photo " + (i + 1));
       var im = document.createElement("img");
-      im.src = src; im.alt = "Memory " + (i + 1); im.loading = "lazy";
+      paint(im, it); im.alt = "Memory " + (i + 1); im.loading = "lazy";
       b.appendChild(im);
       b.addEventListener("click", function () { openPhoto(i); });
       g.appendChild(b);
     });
   }
+  function resetRemove() { el("lbRemove").dataset.sure = ""; el("lbRemove").textContent = "Remove this photo"; }
   function showPhoto() {
-    el("lbImg").src = photos[cur];
+    var it = all()[cur];
+    paint(el("lbImg"), it);
     el("lbImg").alt = "Memory " + (cur + 1);
-    el("lbCount").textContent = (cur + 1) + " / " + photos.length;
+    el("lbCount").textContent = (cur + 1) + " / " + all().length;
+    el("lbRemove").hidden = !it.path;
   }
-  function openPhoto(i) { cur = i; showPhoto(); el("lightbox").hidden = false; el("lbClose").focus(); }
+  function openPhoto(i) { cur = i; resetRemove(); showPhoto(); el("lightbox").hidden = false; el("lbClose").focus(); }
   function closePhoto() { el("lightbox").hidden = true; }
-  function step(d) { cur = (cur + d + photos.length) % photos.length; showPhoto(); }
+  function step(d) { var n = all().length; cur = (cur + d + n) % n; resetRemove(); showPhoto(); }
   function bindLightbox() {
     el("lbClose").addEventListener("click", closePhoto);
     el("lbPrev").addEventListener("click", function () { step(-1); });
     el("lbNext").addEventListener("click", function () { step(1); });
+    el("lbRemove").addEventListener("click", function () {
+      var b = el("lbRemove");
+      if (b.dataset.sure) { resetRemove(); removeCurrent(); }
+      else { b.dataset.sure = "1"; b.textContent = "Tap again to remove"; }
+    });
     el("lightbox").addEventListener("click", function (e) { if (e.target === el("lightbox")) closePhoto(); });
     document.addEventListener("keydown", function (e) {
       if (el("lightbox").hidden) return;
@@ -217,13 +347,35 @@
       var dx = e.changedTouches[0].clientX - x0; x0 = null;
       if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
     });
+
+    el("addPhotos").addEventListener("click", function () {
+      if (!getToken()) { showTokenBox(); setStatus("Set up your token first (one time only)."); return; }
+      el("photoInput").click();
+    });
+    el("photoInput").addEventListener("change", function () { addFiles(el("photoInput").files); el("photoInput").value = ""; });
+    el("saveToken").addEventListener("click", function () {
+      var t = el("tokenInput").value.trim();
+      if (!t) return setStatus("Paste your token first.");
+      try { localStorage.setItem(TOKEN_KEY, t); } catch (e) { return setStatus("This browser can't save the token."); }
+      el("tokenInput").value = "";
+      refreshTokenUI();
+      setStatus("Token saved on this phone. Tap Add photos.");
+    });
+    el("forgetToken").addEventListener("click", function () {
+      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      refreshTokenUI();
+      setStatus("Token removed from this phone.");
+    });
   }
 
   load();
   bind();
   render();
+  for (var n = 1; n <= PHOTO_COUNT; n++) builtin.push({ name: "memory-" + pad(n) + ".jpg" });
   buildGallery();
   bindLightbox();
+  refreshTokenUI();
+  loadRemote(buildGallery);
 
   // Hearts go off on their own when today is a monthsary.
   var t = new Date();

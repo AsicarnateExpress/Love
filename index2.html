@@ -47,6 +47,27 @@
       <div class="eyebrow">Photos</div>
       <h2 id="memTitle">Our memories</h2>
       <div class="gallery" id="gallery"></div>
+      <div class="add-row">
+        <button class="btn-alt" id="addPhotos" type="button">Add photos</button>
+        <button class="link-btn" id="forgetToken" type="button" hidden>Forget token</button>
+        <input id="photoInput" type="file" accept="image/*" multiple hidden>
+        <span class="add-status" id="addStatus" aria-live="polite">Photos you add are saved to GitHub, so both phones see them.</span>
+      </div>
+      <div class="token-box" id="tokenBox" hidden>
+        <strong>One-time setup on this phone</strong>
+        <ol>
+          <li>On github.com, tap your profile photo, then <b>Settings</b> &rarr; <b>Developer settings</b> &rarr; <b>Personal access tokens</b> &rarr; <b>Fine-grained tokens</b> &rarr; <b>Generate new token</b>.</li>
+          <li>Name it <b>Monthsary photos</b>. Set the expiration to the longest option.</li>
+          <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick your <b>Love</b> repo.</li>
+          <li>Under <b>Permissions</b> &rarr; <b>Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+          <li>Tap <b>Generate token</b>, copy it (it starts with <code>github_pat_</code>), and paste it below.</li>
+        </ol>
+        <label for="tokenInput">Your token
+          <input id="tokenInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
+        </label>
+        <div class="actions"><button class="btn-main" id="saveToken" type="button">Save token</button></div>
+        <p class="hint">The token stays on this phone only. Never share it with anyone.</p>
+      </div>
     </section>
 
     <details id="editor">
@@ -66,6 +87,7 @@
     <button class="lb-nav lb-prev" id="lbPrev" type="button" aria-label="Previous photo">&lsaquo;</button>
     <img id="lbImg" alt="">
     <button class="lb-nav lb-next" id="lbNext" type="button" aria-label="Next photo">&rsaquo;</button>
+    <button class="lb-remove" id="lbRemove" type="button" hidden>Remove this photo</button>
     <div class="lb-count" id="lbCount"></div>
   </div>
 
