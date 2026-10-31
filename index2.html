@@ -43,6 +43,32 @@
       </div>
     </section>
 
+    <section class="letter" aria-labelledby="letterTitle">
+      <div class="eyebrow">A letter</div>
+      <h2 id="letterTitle">A letter for you</h2>
+      <button class="envelope" id="envelope" type="button" aria-expanded="false" aria-controls="paper">
+        <svg class="env-icon" viewBox="0 0 56 40" aria-hidden="true"><rect x="1.5" y="1.5" width="53" height="37" rx="4" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M3 4 L28 23 L53 4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
+        <span id="envLabel">Open the letter</span>
+      </button>
+      <article class="paper" id="paper" hidden>
+        <div id="letterText"></div>
+      </article>
+      <div class="add-row">
+        <button class="link-btn" id="editLetter" type="button">Write or edit the letter</button>
+        <span class="add-status" id="letterStatus" aria-live="polite"></span>
+      </div>
+      <div class="letter-editor" id="letterEditor" hidden>
+        <label for="letterInput">Your letter
+          <textarea id="letterInput" rows="10" placeholder="Dear love, ..."></textarea>
+        </label>
+        <div class="actions">
+          <button class="btn-main" id="saveLetter" type="button">Save letter</button>
+          <button class="btn-alt" id="cancelLetter" type="button">Cancel</button>
+        </div>
+        <p class="hint">The letter is saved to GitHub, so she sees it on her phone too. You need the one-time token setup for this.</p>
+      </div>
+    </section>
+
     <section class="memories" aria-labelledby="memTitle">
       <div class="eyebrow">Photos</div>
       <h2 id="memTitle">Our memories</h2>
@@ -53,22 +79,24 @@
         <input id="photoInput" type="file" accept="image/*" multiple hidden>
         <span class="add-status" id="addStatus" aria-live="polite">Photos you add are saved to GitHub, so both phones see them.</span>
       </div>
-      <div class="token-box" id="tokenBox" hidden>
-        <strong>One-time setup on this phone</strong>
-        <ol>
-          <li>On github.com, tap your profile photo, then <b>Settings</b> &rarr; <b>Developer settings</b> &rarr; <b>Personal access tokens</b> &rarr; <b>Fine-grained tokens</b> &rarr; <b>Generate new token</b>.</li>
-          <li>Name it <b>Monthsary photos</b>. Set the expiration to the longest option.</li>
-          <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick your <b>Love</b> repo.</li>
-          <li>Under <b>Permissions</b> &rarr; <b>Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
-          <li>Tap <b>Generate token</b>, copy it (it starts with <code>github_pat_</code>), and paste it below.</li>
-        </ol>
-        <label for="tokenInput">Your token
-          <input id="tokenInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
-        </label>
-        <div class="actions"><button class="btn-main" id="saveToken" type="button">Save token</button></div>
-        <p class="hint">The token stays on this phone only. Never share it with anyone.</p>
-      </div>
     </section>
+
+    <div class="token-box" id="tokenBox" hidden>
+      <strong>One-time setup on this phone</strong>
+      <ol>
+        <li>On github.com, tap your profile photo, then <b>Settings</b> &rarr; <b>Developer settings</b> &rarr; <b>Personal access tokens</b> &rarr; <b>Fine-grained tokens</b> &rarr; <b>Generate new token</b>.</li>
+        <li>Name it <b>Monthsary photos</b>. Set the expiration to the longest option.</li>
+        <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick your <b>Love</b> repo.</li>
+        <li>Under <b>Permissions</b> &rarr; <b>Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+        <li>Tap <b>Generate token</b>, copy it (it starts with <code>github_pat_</code>), and paste it below.</li>
+      </ol>
+      <label for="tokenInput">Your token
+        <input id="tokenInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_...">
+      </label>
+      <div class="actions"><button class="btn-main" id="saveToken" type="button">Save token</button></div>
+      <p class="hint">The token stays on this phone only. Never share it with anyone.</p>
+      <p class="add-status" id="tokenStatus" aria-live="polite"></p>
+    </div>
 
     <details id="editor">
       <summary>Make it yours</summary>

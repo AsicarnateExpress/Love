@@ -95,6 +95,7 @@
       (yrs > 0 ? "the next anniversary" : "your first anniversary");
 
     showNote();
+    if (typeof renderLetter === "function") renderLetter();
   }
 
   function showNote() {
@@ -301,7 +302,10 @@
   }
 
   /* Token box (set up once per phone) */
-  function showTokenBox() { el("tokenBox").hidden = false; }
+  function showTokenBox() {
+    el("tokenBox").hidden = false;
+    try { el("tokenBox").scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+  }
   function refreshTokenUI() {
     var has = !!getToken();
     el("forgetToken").hidden = !has;
@@ -365,17 +369,83 @@
     el("photoInput").addEventListener("change", function () { addFiles(el("photoInput").files); el("photoInput").value = ""; });
     el("saveToken").addEventListener("click", function () {
       var t = el("tokenInput").value.trim();
-      if (!t) return setStatus("Paste your token first.");
-      try { localStorage.setItem(TOKEN_KEY, t); } catch (e) { return setStatus("This browser can't save the token."); }
+      if (!t) { el("tokenStatus").textContent = "Paste your token first."; return; }
+      try { localStorage.setItem(TOKEN_KEY, t); } catch (e) { el("tokenStatus").textContent = "This browser can't save the token."; return; }
       el("tokenInput").value = "";
       refreshTokenUI();
-      setStatus("Token saved on this phone. Tap Add photos.");
+      setStatus("Token saved on this phone. You can add photos and edit the letter now.");
+      el("letterStatus").textContent = "Token saved. Tap Save letter again.";
     });
     el("forgetToken").addEventListener("click", function () {
       try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
       refreshTokenUI();
       setStatus("Token removed from this phone.");
     });
+  }
+
+  /* Letter: the text lives in letter.txt in your repo (the page falls back to a sample). */
+  var LETTER_DEFAULT = "My love,\n\nThis is where your letter goes. Tap \"Write or edit the letter\" below, write whatever is in your heart, and save it.\n\nWith all my love,\n" + "Me";
+  var letterText = LETTER_DEFAULT;
+
+  function loadLetter() {
+    function done(t) { if (t && t.trim()) letterText = t; renderLetter(); }
+    fetch("https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/contents/letter.txt", { headers: { Accept: "application/vnd.github.raw+json" } })
+      .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+      .catch(function () { return fetch("letter.txt").then(function (r) { return r.ok ? r.text() : ""; }); })
+      .then(done)
+      .catch(function () { done(""); });
+  }
+  function renderLetter() {
+    el("letterText").textContent = letterText;
+    el("letterTitle").textContent = "A letter for " + state.n2;
+  }
+  function setLetterStatus(t) { el("letterStatus").textContent = t; }
+  function toUtf8Base64(s) { return btoa(unescape(encodeURIComponent(s))); }
+
+  function saveLetter() {
+    var text = el("letterInput").value;
+    if (!text.trim()) return setLetterStatus("Write something first.");
+    if (!getToken()) { showTokenBox(); el("tokenStatus").textContent = "Set this up once, then tap Save letter again."; return; }
+    el("saveLetter").disabled = true;
+    setLetterStatus("Saving...");
+    api("GET", "letter.txt")
+      .then(function (res) {
+        if (res.status === 404) return null;
+        if (!res.ok) throw res;
+        return res.json().then(function (d) { return d.sha; });
+      })
+      .then(function (sha) {
+        var body = { message: "Update letter", content: toUtf8Base64(text) };
+        if (sha) body.sha = sha;
+        return api("PUT", "letter.txt", body);
+      })
+      .then(function (res) {
+        el("saveLetter").disabled = false;
+        if (!res.ok) return setLetterStatus(explain(res));
+        letterText = text;
+        renderLetter();
+        el("letterEditor").hidden = true;
+        setLetterStatus("Letter saved. She will see it when she opens the page.");
+      })
+      .catch(function (r) {
+        el("saveLetter").disabled = false;
+        setLetterStatus(r && r.status ? explain(r) : "No internet connection. Try again.");
+      });
+  }
+  function bindLetter() {
+    el("envelope").addEventListener("click", function () {
+      var open = el("paper").hidden;
+      el("paper").hidden = !open;
+      el("envelope").setAttribute("aria-expanded", String(open));
+      el("envLabel").textContent = open ? "Close the letter" : "Open the letter";
+    });
+    el("editLetter").addEventListener("click", function () {
+      var show = el("letterEditor").hidden;
+      el("letterEditor").hidden = !show;
+      if (show) { el("letterInput").value = letterText === LETTER_DEFAULT ? "" : letterText; el("letterInput").focus(); }
+    });
+    el("cancelLetter").addEventListener("click", function () { el("letterEditor").hidden = true; setLetterStatus(""); });
+    el("saveLetter").addEventListener("click", saveLetter);
   }
 
   load();
@@ -386,6 +456,9 @@
   bindLightbox();
   refreshTokenUI();
   loadRemote(buildGallery);
+  bindLetter();
+  renderLetter();
+  loadLetter();
 
   // Hearts go off on their own when today is a monthsary.
   var t = new Date();

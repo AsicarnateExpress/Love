@@ -103,6 +103,18 @@ textarea { resize: vertical; min-height: 84px; }
 .hint { font-size: 13px; color: var(--muted); margin: 0; grid-column: 1 / -1; }
 @media (max-width: 460px) { form { grid-template-columns: 1fr; } }
 
+.letter { display: flex; flex-direction: column; gap: 6px; }
+.letter h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 0 0 10px; overflow-wrap: anywhere; }
+.envelope { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; font-weight: 600; font-size: 17px; }
+.envelope:hover { border-color: var(--accent); }
+.env-icon { width: 56px; height: 40px; flex: none; color: var(--accent); }
+.paper { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px 22px; margin-top: 8px; animation: unfold 0.45s ease both; }
+.paper #letterText { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 17px; line-height: 1.75; max-width: 60ch; }
+@keyframes unfold { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.letter-editor { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.letter-editor label { font-size: 13px; }
+.letter-editor textarea { min-height: 220px; font-size: 16px; line-height: 1.6; }
+.letter-editor .hint { grid-column: auto; }
 .memories { display: flex; flex-direction: column; gap: 6px; }
 .memories h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 7vw, 38px); line-height: 1.1; margin: 0 0 10px; }
 .gallery { columns: 2; column-gap: 10px; }
